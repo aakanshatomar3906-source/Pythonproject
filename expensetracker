@@ -1,0 +1,103 @@
+import os
+from datetime import datetime
+
+EXPENSES_FILE = "expenses.txt"
+
+# Ensure file exists and is initialized
+def initialize_file():
+    if not os.path.exists(EXPENSES_FILE):
+        with open(EXPENSES_FILE, "w") as f:
+            f.write("Category,Amount,Date\n")
+
+def add_expense():
+    category = input("Enter category (e.g., Food, Travel): ").strip()
+    amount = input("Enter amount: ").strip()
+    date = input("Enter date (YYYY-MM-DD): ").strip()
+    # Simple validation
+    try:
+        float(amount)
+        datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        print("Invalid amount or date format!")
+        return
+    with open(EXPENSES_FILE, "a") as f:
+        f.write(f"{category},{amount},{date}\n")
+    print("Expense added successfully!")
+
+def read_expenses():
+    expenses = []
+    if os.path.exists(EXPENSES_FILE):
+        with open(EXPENSES_FILE, "r") as f:
+            lines = f.readlines()[1:]  # skip header
+            for line in lines:
+                if line.strip():
+                    category, amount, date = line.strip().split(",")
+                    expenses.append({"category": category, "amount": float(amount), "date": date})
+    return expenses
+
+def view_expenses():
+    expenses = read_expenses()
+    categories = {}
+    for e in expenses:
+        categories.setdefault(e["category"], []).append(e)
+    print("\nExpenses:")
+    if not categories:
+        print("No expenses recorded.")
+    for cat in sorted(categories.keys()):
+        print(f"{cat}:")
+        if not categories[cat]:
+            print("  No expenses recorded.")
+        else:
+            for i, exp in enumerate(categories[cat], 1):
+                print(f"  {i}. Amount: {int(exp['amount']) if exp['amount'].is_integer() else exp['amount']} - Date: {exp['date']}")
+    print()
+
+def monthly_summary():
+    expenses = read_expenses()
+    month_input = input("Enter month and year (YYYY-MM): ").strip()
+    try:
+        datetime.strptime(month_input, "%Y-%m")
+    except ValueError:
+        print("Invalid month format!")
+        return
+    month_expenses = [e for e in expenses if e["date"].startswith(month_input)]
+    if not month_expenses:
+        print("No expenses found for this month.")
+        return
+    total = sum(e["amount"] for e in month_expenses)
+    categories = {}
+    for e in month_expenses:
+        categories[e["category"]] = categories.get(e["category"], 0) + e["amount"]
+    print(f"\nMonthly Summary ({month_input}):")
+    print(f"Total Expenses: {int(total) if total.is_integer() else total}")
+    print("By Category:")
+    all_cats = set(e["category"] for e in expenses)
+    for cat in sorted(all_cats):
+        cat_sum = categories.get(cat, 0)
+        print(f"{cat}: {int(cat_sum) if cat_sum.is_integer() else cat_sum}")
+    print()
+
+def main():
+    initialize_file()
+    while True:
+        print("Welcome to Personal Expense Tracker!")
+        print("1. Add Expense")
+        print("2. View Expenses")
+        print("3. Monthly Summary")
+        print("4. Exit")
+        choice = input("Enter your choice: ").strip()
+        print()
+        if choice == "1":
+            add_expense()
+        elif choice == "2":
+            view_expenses()
+        elif choice == "3":
+            monthly_summary()
+        elif choice == "4":
+            print("Exiting...")
+            break
+        else:
+            print("Invalid choice, please try again.\n")
+
+if __name__ == "__main__":
+    main()
